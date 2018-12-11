@@ -209,19 +209,43 @@ class CSV(object):
 
     @property
     def dialect(self):
-        with sample(self) as fn:
-            return self._sniff_dialect(fn)
+        # 11.12.18 harleen - part-2 - if target is an ftp file that doesnt exist, this returns an exception. so manage it with try catch
+        # original
+        # with sample(self) as fn:
+        #     return self._sniff_dialect(fn)
+        # changes begin
+        try:
+            with sample(self) as fn:
+                return self._sniff_dialect(fn)
+        except:
+            return {'delimiter': ','}
+        # changes end
 
     @property
     def has_header(self):
-        if self._has_header is None:
-            with sample(self) as fn:
-                with open(fn, mode='rb') as f:
-                    raw = f.read()
-                self._has_header = not raw or infer_header(fn,
-                                                           self._sniff_nbytes,
-                                                           encoding=self.encoding)
-        return self._has_header
+        # 11.12.18 harleen - part-2 - if target is an ftp file that doesnt exist, this returns an exception. so manage it with try catch
+        # original
+        # if self._has_header is None:
+        #     with sample(self) as fn:
+        #         with open(fn, mode='rb') as f:
+        #             raw = f.read()
+        #         self._has_header = not raw or infer_header(fn,
+        #                                                    self._sniff_nbytes,
+        #                                                    encoding=self.encoding)
+        # return self._has_header
+        # changes begin
+        try:
+            if self._has_header is None:
+                with sample(self) as fn:
+                    with open(fn, mode='rb') as f:
+                        raw = f.read()
+                    self._has_header = not raw or infer_header(fn,
+                                                               self._sniff_nbytes,
+                                                               encoding=self.encoding)
+            return self._has_header
+        except:
+            return True
+        # changes end
 
     def open(self, mode='rb', **kwargs):
         buf = self._buffer

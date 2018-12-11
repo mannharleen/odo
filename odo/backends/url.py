@@ -130,10 +130,37 @@ def append_urlX_to_X(target, source, **kwargs):
 
     with closing(urlopen(source.url, timeout=kwargs.pop('timeout', None))) as r:
         chunk_size = 16 * source.chunk_size
-        with open(target.path, 'wb') as fp:
+        # 11.12.18 harleen - part2 - hack to enable writing to ftp server
+        # original
+        # with open(target.path, 'wb') as fp:
+        #     for chunk in iter(curry(r.read, chunk_size), b''):
+        #         fp.write(chunk)
+        #     return target
+        # changes begin
+        f = target.path
+        if f.split(':')[0].lower() == 'ftp':
+            import io
+            from io import StringIO
+            from ftplib import FTP
+            from pyparsing import Combine, Suppress, Word, printables, alphas, ZeroOrMore, alphanums, Group, delimitedList, nums
+            ftp_expression = Suppress('ftp://') + Word(alphanums) + ZeroOrMore(Suppress(':')) + Word(alphanums) + ZeroOrMore(Suppress('@')) + Word(alphanums) + ZeroOrMore(Suppress(':')) + Word(nums) + ZeroOrMore(Suppress('/')) + Word(printables)
+            username, password, ip, port, file_loc = ftp_expression.parseString(f)
+            ftp = FTP(ip, username, password)
+            # buffer = StringIO()
+            # df.to_csv(buffer, index=False, header=has_header, sep=sep, encoding=encoding)
+            # text = buffer.getvalue()
+            # bio = io.BytesIO(str.encode(text))
+            # ftp.storbinary('STOR '+file_loc, bio)
             for chunk in iter(curry(r.read, chunk_size), b''):
-                fp.write(chunk)
+                ftp.storbinary('APPE ' + file_loc, io.BytesIO(chunk))
             return target
+        else:
+            with open(target.path, 'wb') as fp:
+                for chunk in iter(curry(r.read, chunk_size), b''):
+                    fp.write(chunk)
+                return target
+        # changes end
+
 
 
 @convert.register(Temp(TextFile), (Temp(URL(TextFile)), URL(TextFile)))

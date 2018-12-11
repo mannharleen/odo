@@ -10,6 +10,7 @@ Odo
    :target: https://binstar.org/blaze/odo
 
 Data migration in Python
+Installation - pip install git+https://github.com/mannharleen/odo.git
 
 Documentation_
 
