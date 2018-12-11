@@ -1,0 +1,12 @@
+*.pyc
+*.dot
+docs/build
+build/
+odo.egg-info/
+dist
+.coverage
+.cache/
+
+# IDEs
+.idea/
+.vscode/

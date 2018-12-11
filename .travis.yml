@@ -1,0 +1,64 @@
+sudo: False
+
+language: python
+
+matrix:
+  fast_finish: true
+  include:
+    - python: 2.7
+      env:
+    - python: 3.4
+      env:
+    - python: 3.5
+      env:
+    - python: 2.7
+      env: PANDAS_VERSION="git+https://github.com/pydata/pandas"
+    - python: 3.4
+      env: PANDAS_VERSION="git+https://github.com/pydata/pandas"
+    - python: 3.5
+      env: PANDAS_VERSION="git+https://github.com/pydata/pandas"
+  allow_failures:
+    - python: 2.7
+      env: PANDAS_VERSION="git+https://github.com/pydata/pandas"
+    - python: 3.4
+      env: PANDAS_VERSION="git+https://github.com/pydata/pandas"
+    - python: 3.5
+      env: PANDAS_VERSION="git+https://github.com/pydata/pandas"
+
+addons:
+  postgresql: "9.3"
+
+services:
+    - mongodb
+    - mysql
+
+install:
+  # Install conda
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update conda
+
+  # install python stuff
+  - source etc/ci-install.sh
+
+# Before_script section stolen from fabric
+# See license https://github.com/fabric/fabric/blob/master/LICENSE
+before_script:
+  # Allow us to SSH passwordless to localhost
+  - ssh-keygen -f ~/.ssh/id_rsa -N ""
+  - cp ~/.ssh/{id_rsa.pub,authorized_keys}
+  # Creation of an SSH agent for testing forwarding
+  - eval $(ssh-agent)
+  - ssh-add
+  - "mongo admin --eval 'db.runCommand({setParameter: 1, textSearchEnabled: true});'"
+  - mysql -e "create database if not exists test;" -u root
+  - psql -c "create database test;" -U postgres
+  - sleep 15
+
+script:
+  - py.test -v --doctest-modules --doctest-ignore-import-errors -rs odo
+
+notifications:
+  email: false

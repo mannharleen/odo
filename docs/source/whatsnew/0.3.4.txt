@@ -1,0 +1,65 @@
+Release 0.3.4
+-------------
+
+:Release: 0.3.4
+:Date: September 15, 2015
+
+New Features
+------------
+
+* Added support for Spark 1.4 on Python 2.7 and Python 3.4 (:issue:`294`)
+
+Experimental Features
+---------------------
+
+.. warning::
+
+   Experimental features are subject to change.
+
+* Add support for specifying primary and foreign key relationships in the SQL
+  backend (:issue:`274`).
+
+New Backends
+------------
+
+None
+
+Improved Backends
+-----------------
+
+* Dialect discovery on CSV files now samples a subset of the file. This allows
+  S3(CSV) to have correct values for its dialect (:issue:`293`).
+* Loading a set of files on a s3 bucket with a prefix into a redshift database
+  now works (:issue:`293`).
+
+API Changes
+-----------
+
+None
+
+Bug Fixes
+---------
+
+* Cope with Dask and bcolz API changes (:issue:`270`).
+* Fixed a bug where columns in dshape were being ignored when converting
+  a numpy array to a DataFrame (:issue:`273`).
+* Fix appending into a sql table from chunks not returning the table.
+  (:issue:`278`).
+* Fix a bug where ``'pytables://'`` wasn't being properly stripped off the URI
+  (:issue:`292`)
+* Fix a bug where a non-existent header row was being removed from an S3(CSV)
+  because the dialect was set incorrectly (:issue:`293`)
+* Fix a bug where the SparkSQL backend wouldn't work if we didn't have paramiko installed (:issue:`300`)
+* Fix a testing bug where the endlines were being compared and they
+  shouldn't have been (:issue:`312`).
+* Fix a bug where sniffing multibyte encodings potentially chopped off
+  part of the encoded string (:issue:`309`, :issue:`311`).
+
+Miscellaneous
+-------------
+
+* Adds :func:`~odo.utils.copydoc` function to copy docstrings from one object
+  onto another. This helps with the pattern of explicitly setting the
+  ``__doc__`` attribute to the ``__doc__`` of another function or class. This
+  function can be used as a decorator like: ``@copydoc(FromThisClass)`` or as a
+  function like: ``copydoc(FromThisClass, to_this_function)``. (:issue:`277`).

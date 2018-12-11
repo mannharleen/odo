@@ -1,0 +1,58 @@
+package:
+  name: odo
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '')}}
+
+build:
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  {% if environ.get('GIT_DESCRIBE_NUMBER', '0') == '0' %}string: py{{ environ.get('PY_VER').replace('.', '') }}_0
+  {% else %}string: py{{ environ.get('PY_VER').replace('.', '') }}_{{ environ.get('GIT_BUILD_STR', 'GIT_STUB') }}{% endif %}
+
+source:
+  git_url: ../
+
+requirements:
+  build:
+    - python
+    - datashape >=0.4.6
+    - numpy >=1.7
+    - pandas >=0.15.0
+    - toolz >=0.7.3
+    - multipledispatch >=0.4.7
+    - networkx
+    - dask >=0.11.1
+
+  run:
+    - python
+    - datashape >=0.5.0
+    - numpy >=1.7
+    - pandas >=0.15.0
+    - toolz >=0.7.3
+    - multipledispatch >=0.4.7
+    - networkx
+    - dask >=0.11.1
+
+test:
+  requires:
+    - pytest
+    - h5py
+    - pytables >=3.0.0
+    - sqlalchemy >=0.8.0
+    - bcolz
+    - mock
+    - pymongo >=2.8,<3 # [not (py35 or win)]
+    - dask
+    - paramiko # [not win]
+    - sqlite3 # [win]
+    - boto # [not win]
+    - bokeh
+    - pip
+    - pymysql
+    - psycopg2 # [unix]
+
+  commands:
+    - pip install sas7bdat && py.test -vx --pyargs odo -rsxX
+
+about:
+  home: https://github.com/blaze/odo/
+  license: BSD
+  summary: Data migration
