@@ -33,7 +33,9 @@ def dot_graph(filename='conversions'):
             dg.node[cls_name(n)]['color'] = 'red'
 
     # Convert to pydot
+    # 11.12.18 harleen - for networkx 1.11
     p = nx.to_pydot(dg)
+    p = nx.drawing.nx_pydot.to_pydot(dg)  # 10.12.18 harleen
 
     p.set_overlap(False)
     p.set_splines(True)

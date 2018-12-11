@@ -258,11 +258,30 @@ compressed_open = {'gz': gzip.open, 'bz2': bz2.BZ2File}
 @append.register(CSV, pd.DataFrame)
 def append_dataframe_to_csv(c, df, dshape=None, **kwargs):
     if not os.path.exists(c.path) or not os.path.getsize(c.path):
-        has_header = kwargs.pop('header', c.has_header)
+        # 11.12.18 harleen - replacing pop and get with 'OR'. this is because even if dict key exists, default value (a method here) is always calcualted. And it errors for FTP locations
+        # original
+        # has_header = kwargs.pop('header', c.has_header)
+        # changes begin
+        try:
+            has_header = kwargs.pop('header')
+        except:
+            try:
+                has_header = c.has_header
+            except:
+                has_header = False
+        # changes end
     else:
         has_header = False
-    sep = kwargs.get('sep',
-                     kwargs.get('delimiter', c.dialect.get('delimiter', ',')))
+    # 11.12.18 harleen - <<see above comment>>
+    # original
+    # sep = kwargs.get('sep',
+    #                  kwargs.get('delimiter', c.dialect.get('delimiter', ',')))
+    # changes begin
+    try:
+        sep = kwargs.get('sep') or kwargs.get('delimiter') or c.dialect.get('delimiter', ',')
+    except:
+        sep = ','
+    # changes end
     encoding = kwargs.get('encoding', c.encoding)
 
     if ext(c.path) in compressed_open:
@@ -272,12 +291,39 @@ def append_dataframe_to_csv(c, df, dshape=None, **kwargs):
         elif sys.version_info[0] == 2:
             kwargs['mode'] = 'ab' if sys.platform == 'win32' else 'at'
 
-    with c.open(mode=kwargs.get('mode', 'a')) as f:
-        df.to_csv(f,
-                  header=has_header,
-                  index=False,
-                  sep=sep,
-                  encoding=encoding)
+    # 11.12.18 harleen: hack to enable writing to ftp server
+    # original
+    # with c.open(mode=kwargs.get('mode', 'a')) as f:
+    #     df.to_csv(f,
+    #               header=has_header,
+    #               index=False,
+    #               sep=sep,
+    #               encoding=encoding)
+    # changes begin
+    f = c.path
+    if f.split(':')[0].lower() == 'ftp':
+        import io
+        from io import StringIO
+        from ftplib import FTP
+        from pyparsing import Combine, Suppress, Word, printables, alphas, ZeroOrMore, alphanums, Group, delimitedList, nums
+        ftp_expression = Suppress('ftp://') + Word(alphanums) + ZeroOrMore(Suppress(':')) + Word(alphanums) + ZeroOrMore(Suppress('@')) + Word(alphanums) + ZeroOrMore(Suppress(':')) + Word(nums) + ZeroOrMore(Suppress('/')) + Word(printables)
+        username, password, ip, port, file_loc = ftp_expression.parseString(f)
+        ftp = FTP(ip, username, password)
+        # bio = io.BytesIO(str.encode(str(df)))
+        buffer = StringIO()
+        df.to_csv(buffer, index=False, header=has_header, sep=sep, encoding=encoding)
+        text = buffer.getvalue()
+        bio = io.BytesIO(str.encode(text))
+        # ftp.storbinary('STOR '+file_loc, bio)
+        ftp.storbinary('APPE ' + file_loc, bio)
+    else:
+        with c.open(mode=kwargs.get('mode', 'a')) as f:
+            df.to_csv(f,
+                      header=has_header,
+                      index=False,
+                      sep=sep,
+                      encoding=encoding)
+    # changes end
 
     return c
 

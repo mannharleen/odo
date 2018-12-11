@@ -10,3 +10,5 @@ dist
 # IDEs
 .idea/
 .vscode/
+
+venv/
