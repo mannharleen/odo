@@ -34,6 +34,9 @@ from ..numpy_dtype import dshape_to_pandas
 from .pandas import coerce_datetimes
 from functools import partial
 
+# 12.12.18 harleen - issue-1
+from odo.tests.utils import open
+
 dialect_terms = '''delimiter doublequote escapechar lineterminator quotechar
 quoting skipinitialspace strict'''.split()
 
@@ -209,43 +212,19 @@ class CSV(object):
 
     @property
     def dialect(self):
-        # 11.12.18 harleen - part-2 - if target is an ftp file that doesnt exist, this returns an exception. so manage it with try catch
-        # original
-        # with sample(self) as fn:
-        #     return self._sniff_dialect(fn)
-        # changes begin
-        try:
-            with sample(self) as fn:
-                return self._sniff_dialect(fn)
-        except:
-            return {'delimiter': ','}
-        # changes end
+        with sample(self) as fn:
+            return self._sniff_dialect(fn)
 
     @property
     def has_header(self):
-        # 11.12.18 harleen - part-2 - if target is an ftp file that doesnt exist, this returns an exception. so manage it with try catch
-        # original
-        # if self._has_header is None:
-        #     with sample(self) as fn:
-        #         with open(fn, mode='rb') as f:
-        #             raw = f.read()
-        #         self._has_header = not raw or infer_header(fn,
-        #                                                    self._sniff_nbytes,
-        #                                                    encoding=self.encoding)
-        # return self._has_header
-        # changes begin
-        try:
-            if self._has_header is None:
-                with sample(self) as fn:
-                    with open(fn, mode='rb') as f:
-                        raw = f.read()
-                    self._has_header = not raw or infer_header(fn,
-                                                               self._sniff_nbytes,
-                                                               encoding=self.encoding)
-            return self._has_header
-        except:
-            return True
-        # changes end
+        if self._has_header is None:
+            with sample(self) as fn:
+                with open(fn, mode='rb') as f:
+                    raw = f.read()
+                self._has_header = not raw or infer_header(fn,
+                                                           self._sniff_nbytes,
+                                                           encoding=self.encoding)
+        return self._has_header
 
     def open(self, mode='rb', **kwargs):
         buf = self._buffer
@@ -282,7 +261,7 @@ compressed_open = {'gz': gzip.open, 'bz2': bz2.BZ2File}
 @append.register(CSV, pd.DataFrame)
 def append_dataframe_to_csv(c, df, dshape=None, **kwargs):
     if not os.path.exists(c.path) or not os.path.getsize(c.path):
-        # 11.12.18 harleen - replacing pop and get with 'OR'. this is because even if dict key exists, default value (a method here) is always calcualted. And it errors for FTP locations
+        # 11.12.18 harleen - replacing pop and get with 'OR'. this is because even if dict key exists, default value (a method here) is always calcualted.
         # original
         # has_header = kwargs.pop('header', c.has_header)
         # changes begin
@@ -315,40 +294,12 @@ def append_dataframe_to_csv(c, df, dshape=None, **kwargs):
         elif sys.version_info[0] == 2:
             kwargs['mode'] = 'ab' if sys.platform == 'win32' else 'at'
 
-    # 11.12.18 harleen: hack to enable writing to ftp server
-    # original
-    # with c.open(mode=kwargs.get('mode', 'a')) as f:
-    #     df.to_csv(f,
-    #               header=has_header,
-    #               index=False,
-    #               sep=sep,
-    #               encoding=encoding)
-    # changes begin
-    f = c.path
-    if f.split(':')[0].lower() == 'ftp':
-        import io
-        from io import StringIO
-        from ftplib import FTP
-        from pyparsing import Combine, Suppress, Word, printables, alphas, ZeroOrMore, alphanums, Group, delimitedList, nums
-        ftp_expression = Suppress('ftp://') + Word(alphanums) + ZeroOrMore(Suppress(':')) + Word(alphanums) + ZeroOrMore(Suppress('@')) + Word(alphanums) + ZeroOrMore(Suppress(':')) + Word(nums) + ZeroOrMore(Suppress('/')) + Word(printables)
-        username, password, ip, port, file_loc = ftp_expression.parseString(f)
-        ftp = FTP(ip, username, password)
-        # bio = io.BytesIO(str.encode(str(df)))
-        buffer = StringIO()
-        df.to_csv(buffer, index=False, header=has_header, sep=sep, encoding=encoding)
-        text = buffer.getvalue()
-        bio = io.BytesIO(str.encode(text))
-        # ftp.storbinary('STOR '+file_loc, bio)
-        ftp.storbinary('APPE ' + file_loc, bio)
-    else:
-        with c.open(mode=kwargs.get('mode', 'a')) as f:
-            df.to_csv(f,
-                      header=has_header,
-                      index=False,
-                      sep=sep,
-                      encoding=encoding)
-    # changes end
-
+    with c.open(mode=kwargs.get('mode', 'a')) as f:
+        df.to_csv(f,
+                  header=has_header,
+                  index=False,
+                  sep=sep,
+                  encoding=encoding)
     return c
 
 
@@ -510,8 +461,16 @@ def convert_dataframes_to_temporary_csv(data, **kwargs):
 
 @dispatch(CSV)
 def drop(c):
+    # 12.12.18 harleen - issue-1
+    # original
+    # if c.path is not None:
+    #     os.unlink(c.path)
+    # changes begin
     if c.path is not None:
-        os.unlink(c.path)
+        f = open(c.path)
+        f.fs.remove(f.file_name)
+        f.close()
+    # changes end
 
 
 ooc_types.add(CSV)

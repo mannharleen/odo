@@ -20,6 +20,9 @@ from ..temp import Temp
 from ..drop import drop
 from ..utils import tuples_to_records
 
+# 12.12.18 harleen - For issue-1 implemented an open utility using fs module that can handle files with ftp URL
+from odo.tests.utils import open
+
 
 class JSON(object):
     """ Proxy for a JSON file
@@ -299,7 +302,15 @@ def list_to_temporary_jsonlines(data, **kwargs):
 
 @drop.register((JSON, JSONLines))
 def drop_json(js):
-    if os.path.exists(js.path):
-        os.remove(js.path)
+    # 12.12.18 harleen - issue-1
+    # original
+    # if os.path.exists(js.path):
+    #     os.remove(js.path)
+    # changes begin
+    if js.path is not None:
+        f = open(js.path)
+        f.fs.remove(f.file_name)
+        f.close()
+    # changes end
 
 ooc_types.add(JSONLines)
