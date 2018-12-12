@@ -13,7 +13,7 @@ with open(FTP_CONN + '/del1.json', 'w') as f:
     f.write('{  "a": 1,  "b": 2,  "c": 3}')
 
 
-def test_json_to_csv():
+def test_ftp_json_to_ftp_csv():
     # source = pd.DataFrame({'col1': [1, 2, 3]})
     source = FTP_CONN + '/del1.json'
     target = FTP_CONN + '/del2.csv'
@@ -28,7 +28,7 @@ def test_json_to_csv():
     f_t.close()
 
 
-def test_csv_to_json():
+def test_ftp_csv_to_ftp_json():
     source = FTP_CONN + '/del1.csv'
     target = FTP_CONN + '/del2.json'
     try:
@@ -42,7 +42,7 @@ def test_csv_to_json():
     f_t.close()
 
 
-def test_df_to_json():
+def test_df_to_ftp_json():
     source = pd.DataFrame([{"a": 1,  "b": 2,  "c": 3}])
     target = FTP_CONN + '/del2.json'
     try:
@@ -55,3 +55,20 @@ def test_df_to_json():
     assert json.loads(f_t.read()) == json.loads('{  "a": 1,  "b": 2,  "c": 3}')
     f_t.close()
 
+
+def test_df_to_ftp_csv():
+    source = pd.DataFrame([{"a": 1, "b": 2, "c": 3}])
+    target = FTP_CONN + '/del2.csv'
+    try:
+        drop(target)
+    except:
+        pass
+    odo(source, target, header=True)
+
+    f_t = open(target)
+    assert f_t.read() == 'a,b,c\n1,2,3\n'
+    f_t.close()
+
+
+if __name__ == '__main__':
+    test_ftp_csv_to_ftp_json()

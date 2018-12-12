@@ -468,6 +468,8 @@ def drop(c):
     # changes begin
     if c.path is not None:
         f = open(c.path)
+        # f.fs.remove(f.file_name)  # 13.12.8 close the file so it can be deleted
+        f.close(close_fs=False)
         f.fs.remove(f.file_name)
         f.close()
     # changes end

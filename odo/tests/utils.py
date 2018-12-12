@@ -29,9 +29,11 @@ class open:
     def read(self, size=-1):
         return self.f.read(size)
 
-    def close(self):
+    def close(self, close_fs=True):
+        # option to only close the file and not the fs. This is useful when we want to perform os.remove on the file, keeping the fs open
         self.f.close()
-        self.fs.close()
+        if close_fs:
+            self.fs.close()
 
     def __iter__(self):
         return self.f
